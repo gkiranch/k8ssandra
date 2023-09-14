@@ -918,3 +918,12 @@ kube-prometheus-stack:
       tag: 7.5.17
       sha: ""
       pullPolicy: IfNotPresent
+
+# Helm hooks configurations
+enableNamespaceAnnotation: true
+hooks:
+    annotateNamespace:
+     image: "artifactory.gng.gk.tech/docker-remote/line/kubectl-kustomize"
+     tag: 1.24.1-4.5.4
+     imagePullSecrets:
+     - name: registry-credentials

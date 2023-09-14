@@ -1,0 +1,40 @@
+{{/*
+  This hook runs during the installation and annotates the namespace with the kiam
+  annotation needed for the service with the role name from the Values file.
+*/}}
+{{- if and (eq .Values.global.s1.cloud "aws") .Values.enableNamespaceAnnotation }}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "k8ssandra.fullname" . }}-ns-annotation
+  labels:
+    {{- include "k8ssandra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hook
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-7"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "k8ssandra.labels" . | nindent 8 }}
+        app.kubernetes.io/component: hook
+    spec:
+      imagePullSecrets:
+        - name: registry-credentials
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "k8ssandra.fullname" . }}-ns-annotation
+      containers:
+        - name: kubectl
+          image: "{{ .Values.hooks.annotateNamespace.image }}:{{ .Values.hooks.annotateNamespace.tag }}"
+          command:
+          - kubectl
+          - annotate
+          - namespace
+          - {{ .Release.Namespace }}
+          - iam.amazonaws.com/permitted={{ tpl .Values.namespaceIamRolePermitted . }}
+          - --overwrite
+
+{{- end }}
